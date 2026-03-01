@@ -1,7 +1,9 @@
 package br.com.literalura.literalura.service;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,6 +58,24 @@ public class LivroService {
     livro.setAutor(autor);
 
     return livroRepository.save(livro);
+  }
+
+  public void exibirEstatisticas() {
+        List<Livro> livros = livroRepository.findAll();
+        
+        DoubleSummaryStatistics est = livros.stream()
+                .filter(l -> l.getNumeroDownloads() > 0)
+                .collect(Collectors.summarizingDouble(Livro::getNumeroDownloads));
+
+        System.out.println("\n--- Estatísticas de Downloads ---");
+        System.out.println("Média: " + String.format("%.2f", est.getAverage()));
+        System.out.println("Máximo: " + est.getMax());
+        System.out.println("Mínimo: " + est.getMin());
+        System.out.println("Total de registros: " + est.getCount());
+  }
+
+  public List<Livro> obterTop10() {
+    return livroRepository.findTop10ByOrderByNumeroDownloadsDesc();
   }
 
   public List<Livro> listarTodos() {
