@@ -3,7 +3,7 @@ package br.com.literalura.literalura.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.Id;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -57,6 +57,14 @@ public class Autor {
 
   public void setAnoFalecimento(Integer anoFalecimento) {
     this.anoFalecimento = anoFalecimento;
+  }
+
+  public List<Livro> getLivros() {
+    return livros;
+  }
+
+  public void setLivros(List<Livro> livros) {
+    this.livros = livros;
   }
 
 }
