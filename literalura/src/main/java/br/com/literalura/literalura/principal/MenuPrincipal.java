@@ -34,14 +34,19 @@ public class MenuPrincipal implements CommandLineRunner {
   }
 
   private void exibirMenu() {
+    System.out.println("Escolha uma opção");
     System.out.println("""
-        Escolha uma opção:
+        -------------------------------------------
         1 - Buscar livro pelo título
         2 - Listar livros registrados
         3 - Listar autores registrados
         4 - Listar autores vivos em um ano
         5 - Listar livros por idioma
+        6 - Buscar autor por nome (Banco de Dados)
+        7 - Top 10 livros mais baixados
+        8 - Exibir estatísticas de downloads
         0 - Sair
+        -------------------------------------------
         """);
   }
 
@@ -69,6 +74,15 @@ public class MenuPrincipal implements CommandLineRunner {
         break;
       case 5:
         listarLivrosPorIdioma();
+        break;
+      case 6:
+        buscarAutorPorNome();
+        break;
+      case 7:
+        listarTop10();
+        break;
+      case 8:
+        exibirEstatisticas();
         break;
       case 0:
         System.out.println("Saindo...");
@@ -164,5 +178,26 @@ public class MenuPrincipal implements CommandLineRunner {
     } else {
       livros.forEach(l -> System.out.println("Título: " + l.getTitulo() + " | Autor: " + l.getAutor().getNome()));
     }
+  }
+
+  private void buscarAutorPorNome() {
+      System.out.print("Digite o nome do autor: ");
+      String nome = scanner.nextLine();
+      List<Autor> autores = autorService.buscarAutorPorNome(nome);
+      if (autores.isEmpty()) {
+          System.out.println("Autor não encontrado no banco.");
+      } else {
+          autores.forEach(a -> System.out.println("Autor: " + a.getNome() + " | Nascimento: " + a.getAnoNascimento()));
+      }
+  }
+
+  private void listarTop10() {
+      List<Livro> top10 = livroService.obterTop10();
+      System.out.println("\nRANKING TOP 10:");
+      top10.forEach(l -> System.out.println(l.getNumeroDownloads() + " downloads - " + l.getTitulo()));
+  }
+
+  private void exibirEstatisticas() {
+      livroService.exibirEstatisticas();
   }
 }
