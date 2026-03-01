@@ -1,7 +1,7 @@
 package br.com.literalura.literalura.dto;
 
 public record AutorDTO(
-    String nome,
-    Integer anoNascimento,
-    Integer anoFalecimento) {
+    String name,
+    int birth_year,
+    int death_year) {
 }
