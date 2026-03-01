@@ -20,4 +20,8 @@ public class AutorService {
   public List<Autor> listarAutoresVivosNoAno(Integer ano) {
     return autorRepository.findAutoresVivosNoAno(ano);
   }
+
+  public List<Autor> buscarAutorPorNome(String nome) {
+    return autorRepository.findByNomeContainingIgnoreCase(nome);
+  }
 }
