@@ -28,6 +28,17 @@ public class Livro {
   @JoinColumn(name = "autor_id")
   private Autor autor;
 
+  @Column(name = "curiosidade", columnDefinition = "TEXT")
+  private String curiosidade;
+
+  public String getCuriosidade() {
+    return curiosidade;
+  }
+
+  public void setCuriosidade(String curiosidade) {
+    this.curiosidade = curiosidade;
+  }
+
   public Long getId() {
     return id;
   }
