@@ -1,9 +1,14 @@
 package br.com.literalura.literalura.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record AutorDTO(
-    String nome, 
+    @JsonProperty("name")
+    String nome,
+    
+    @JsonProperty("birth_year")
     Integer anoNascimento,
+    
+    @JsonProperty("death_year")
     Integer anoFalecimento) {
 }
