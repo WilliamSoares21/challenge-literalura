@@ -11,11 +11,12 @@ import org.springframework.stereotype.Service;
 import br.com.literalura.literalura.client.GutendexClient;
 import br.com.literalura.literalura.dto.AutorDTO;
 import br.com.literalura.literalura.dto.LivroDTO;
+import br.com.literalura.literalura.exception.LivroNaoEncontradoException;
 import br.com.literalura.literalura.model.Autor;
 import br.com.literalura.literalura.model.Livro;
 import br.com.literalura.literalura.repository.AutorRepository;
 import br.com.literalura.literalura.repository.LivroRepository;
-import br.com.literalura.literalura.exception.LivroNaoEncontradoException;
+
 @Service
 public class LivroService {
   @Autowired
@@ -41,12 +42,12 @@ public class LivroService {
 
     // Obtém ou cria autor
     AutorDTO dadosAutor = dados.authors().get(0); // assume que tem pelo menos um autor
-    Autor autor = autorRepository.findByNome(dadosAutor.name())
+    Autor autor = autorRepository.findByNome(dadosAutor.nome())
         .orElseGet(() -> {
           Autor novoAutor = new Autor();
-          novoAutor.setNome(dadosAutor.name());
-          novoAutor.setAnoNascimento(dadosAutor.birth_year());
-          novoAutor.setAnoFalecimento(dadosAutor.death_year());
+          novoAutor.setNome(dadosAutor.nome());
+          novoAutor.setAnoNascimento(dadosAutor.anoNascimento());
+          novoAutor.setAnoFalecimento(dadosAutor.anoFalecimento());
           return autorRepository.save(novoAutor);
         });
 
@@ -61,17 +62,17 @@ public class LivroService {
   }
 
   public void exibirEstatisticas() {
-        List<Livro> livros = livroRepository.findAll();
-        
-        DoubleSummaryStatistics est = livros.stream()
-                .filter(l -> l.getNumeroDownloads() > 0)
-                .collect(Collectors.summarizingDouble(Livro::getNumeroDownloads));
+    List<Livro> livros = livroRepository.findAll();
 
-        System.out.println("\n--- Estatísticas de Downloads ---");
-        System.out.println("Média: " + String.format("%.2f", est.getAverage()));
-        System.out.println("Máximo: " + est.getMax());
-        System.out.println("Mínimo: " + est.getMin());
-        System.out.println("Total de registros: " + est.getCount());
+    DoubleSummaryStatistics est = livros.stream()
+        .filter(l -> l.getNumeroDownloads() > 0)
+        .collect(Collectors.summarizingDouble(Livro::getNumeroDownloads));
+
+    System.out.println("\n--- Estatísticas de Downloads ---");
+    System.out.println("Média: " + String.format("%.2f", est.getAverage()));
+    System.out.println("Máximo: " + est.getMax());
+    System.out.println("Mínimo: " + est.getMin());
+    System.out.println("Total de registros: " + est.getCount());
   }
 
   public List<Livro> obterTop10() {
