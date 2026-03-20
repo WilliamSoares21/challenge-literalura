@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.literalura.literalura.client.GutendexClient;
 import br.com.literalura.literalura.dto.AutorDTO;
+import br.com.literalura.literalura.dto.EstatisticasDownloadsDTO;
 import br.com.literalura.literalura.dto.LivroDTO;
 import br.com.literalura.literalura.exception.LivroNaoEncontradoException;
 import br.com.literalura.literalura.model.Autor;
@@ -35,13 +36,13 @@ public class LivroService {
     LivroDTO dados = optionalDados.get();
 
     // Verifica se livro já existe no banco (pelo título)
-    Optional<Livro> livroExistente = livroRepository.findByTituloIgnoreCase(dados.title());
+    Optional<Livro> livroExistente = livroRepository.findByTituloIgnoreCase(dados.titulo());
     if (livroExistente.isPresent()) {
       return livroExistente.get();
     }
 
     // Obtém ou cria autor
-    AutorDTO dadosAutor = dados.authors().get(0); // assume que tem pelo menos um autor
+    AutorDTO dadosAutor = dados.autores().get(0);
     Autor autor = autorRepository.findByNome(dadosAutor.nome())
         .orElseGet(() -> {
           Autor novoAutor = new Autor();
@@ -53,26 +54,20 @@ public class LivroService {
 
     // Cria e salva o livro
     Livro livro = new Livro();
-    livro.setTitulo(dados.title());
-    livro.setIdioma(dados.languages().get(0)); // considera primeiro idioma
-    livro.setNumeroDownloads(dados.download_count());
+    livro.setTitulo(dados.titulo());
+    livro.setIdioma(dados.idiomas().get(0));
+    livro.setNumeroDownloads(dados.numeroDownloads());
     livro.setAutor(autor);
 
     return livroRepository.save(livro);
   }
 
-  public void exibirEstatisticas() {
+  public EstatisticasDownloadsDTO obterEstatisticasDownloadsDTO(String titulo) {
     List<Livro> livros = livroRepository.findAll();
-
     DoubleSummaryStatistics est = livros.stream()
-        .filter(l -> l.getNumeroDownloads() > 0)
+        .filter(l -> l.getTitulo().equalsIgnoreCase(titulo) && l.getNumeroDownloads() > 0)
         .collect(Collectors.summarizingDouble(Livro::getNumeroDownloads));
-
-    System.out.println("\n--- Estatísticas de Downloads ---");
-    System.out.println("Média: " + String.format("%.2f", est.getAverage()));
-    System.out.println("Máximo: " + est.getMax());
-    System.out.println("Mínimo: " + est.getMin());
-    System.out.println("Total de registros: " + est.getCount());
+    return new EstatisticasDownloadsDTO(est.getAverage(), est.getMax(), est.getMin(), est.getSum());
   }
 
   public List<Livro> obterTop10() {
