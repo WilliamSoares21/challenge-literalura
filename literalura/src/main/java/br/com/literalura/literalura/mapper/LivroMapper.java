@@ -10,22 +10,21 @@ import br.com.literalura.literalura.model.Livro;
 
 @Component
 public class LivroMapper {
-   public LivroDTO converteLivroParaDTO(Livro livro) {
-        // Mapeia o autor da entidade para o DTO
-        AutorDTO autorDTO = null;
-        if (livro.getAutor() != null) {
-            autorDTO = new AutorDTO(
-                livro.getAutor().getNome(),
-                livro.getAutor().getAnoNascimento(),
-                livro.getAutor().getAnoFalecimento()
-            );
-        }
-
-        return new LivroDTO(
-            livro.getTitulo(),
-            autorDTO != null ? List.of(autorDTO) : List.of(),
-            List.of(livro.getIdioma()),
-            livro.getNumeroDownloads()
-        );
+  public LivroDTO converteLivroParaDTO(Livro livro) {
+    // Mapeia o autor da entidade para o DTO
+    AutorDTO autorDTO = null;
+    if (livro.getAutor() != null) {
+      autorDTO = new AutorDTO(
+          livro.getAutor().getNome(),
+          livro.getAutor().getAnoNascimento(),
+          livro.getAutor().getAnoFalecimento());
     }
+
+    return new LivroDTO(
+        livro.getTitulo(),
+        autorDTO != null ? List.of(autorDTO) : List.of(),
+        List.of(livro.getIdioma()),
+        livro.getNumeroDownloads(),
+        livro.getCuriosidade());
+  }
 }
