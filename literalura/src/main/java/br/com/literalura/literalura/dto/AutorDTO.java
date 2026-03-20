@@ -1,7 +1,9 @@
 package br.com.literalura.literalura.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record AutorDTO(
-    String name,
-    int birth_year,
-    int death_year) {
+    String nome, 
+    Integer anoNascimento,
+    Integer anoFalecimento) {
 }
