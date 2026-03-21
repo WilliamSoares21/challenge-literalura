@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import br.com.literalura.literalura.dto.CuriosidadeDTO;
 import br.com.literalura.literalura.dto.EstatisticasDownloadsDTO;
 import br.com.literalura.literalura.dto.LivroDTO;
+import br.com.literalura.literalura.exception.LivroNaoEncontradoException;
 import br.com.literalura.literalura.mapper.LivroMapper;
 import br.com.literalura.literalura.model.Livro;
 import br.com.literalura.literalura.service.ConsultaGemini;
@@ -50,12 +51,20 @@ public class LivroController {
   }
 
   @GetMapping("/titulo")
-  public ResponseEntity<LivroDTO> buscarPorTitulo(@RequestParam @NotBlank String titulo) {
-    Livro livro = livroService.buscarESalvarLivroPorTitulo(titulo);
+  public ResponseEntity<LivroDTO> buscarPorTitulo(
+      @RequestParam @NotBlank(message = "Título não pode ser vazio") String titulo) {
+    try {
+      Livro livro = livroService.buscarESalvarLivroPorTitulo(titulo);
 
-    LivroDTO dto = mapper.converteLivroParaDTO(livro);
+      LivroDTO dto = mapper.converteLivroParaDTO(livro);
 
-    return ResponseEntity.ok(dto);
+      return ResponseEntity.ok(dto);
+    } catch (LivroNaoEncontradoException e) {
+      return ResponseEntity.notFound().build(); // 404 not found
+    } catch (Exception e) {
+      log.error("Erro ao buscar livro: {}", e.getMessage()); // error 500
+      return ResponseEntity.internalServerError().build();
+    }
   }
 
   @GetMapping("/titulo/{titulo}/estatisticas-downloads")
