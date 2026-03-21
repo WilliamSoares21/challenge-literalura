@@ -31,6 +31,14 @@ public class Livro {
   @Column(name = "curiosidade", columnDefinition = "TEXT")
   private String curiosidade;
 
+  public Livro() {
+  }
+
+  public Livro(String titulo, String curiosidade) {
+    this.titulo = titulo;
+    this.curiosidade = curiosidade;
+  }
+
   public String getCuriosidade() {
     return curiosidade;
   }
