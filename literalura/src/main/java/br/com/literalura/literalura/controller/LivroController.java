@@ -1,9 +1,9 @@
 package br.com.literalura.literalura.controller;
 
-import java.awt.image.ReplicateScaleFilter;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,8 +20,11 @@ import br.com.literalura.literalura.dto.LivroDTO;
 import br.com.literalura.literalura.exception.LivroNaoEncontradoException;
 import br.com.literalura.literalura.mapper.LivroMapper;
 import br.com.literalura.literalura.model.Livro;
+import br.com.literalura.literalura.security.InputValidator;
+import br.com.literalura.literalura.security.RateLimiter;
 import br.com.literalura.literalura.service.ConsultaGemini;
 import br.com.literalura.literalura.service.LivroService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 
 @RestController
@@ -39,30 +42,45 @@ public class LivroController {
   @Autowired
   private ConsultaGemini consultaGemini;
 
+  @Autowired
+  private InputValidator inputValidator;
+
+  @Autowired
+  private RateLimiter rateLimiter;
+
   @GetMapping
   public ResponseEntity<List<LivroDTO>> listarTodos() {
     List<Livro> livros = livroService.listarTodos();
-
     List<LivroDTO> dto = livros.stream()
         .map(mapper::converteLivroParaDTO)
         .toList();
-
     return ResponseEntity.ok(dto);
   }
 
   @GetMapping("/titulo")
   public ResponseEntity<LivroDTO> buscarPorTitulo(
-      @RequestParam @NotBlank(message = "Título não pode ser vazio") String titulo) {
+      @RequestParam @NotBlank(message = "Título não pode ser vazio") String titulo,
+      HttpServletRequest request) {
+    
+    String clientIp = getClientIp(request);
+    if (!rateLimiter.allowRequest(clientIp)) {
+      log.warn("🚫 RATE_LIMIT_EXCEEDED para IP: {}", clientIp);
+      return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+    }
+
+    if (!inputValidator.isValidTitle(titulo)) {
+      log.warn("⚠️ INVALID_INPUT detectado: titulo='{}' (pode conter injeção)", titulo);
+      return ResponseEntity.badRequest().build();
+    }
+
     try {
       Livro livro = livroService.buscarESalvarLivroPorTitulo(titulo);
-
       LivroDTO dto = mapper.converteLivroParaDTO(livro);
-
       return ResponseEntity.ok(dto);
     } catch (LivroNaoEncontradoException e) {
-      return ResponseEntity.notFound().build(); // 404 not found
+      return ResponseEntity.notFound().build();
     } catch (Exception e) {
-      log.error("Erro ao buscar livro: {}", e.getMessage()); // error 500
+      log.error("Erro ao buscar livro: {}", e.getMessage());
       return ResponseEntity.internalServerError().build();
     }
   }
@@ -70,50 +88,65 @@ public class LivroController {
   @GetMapping("/titulo/{titulo}/estatisticas-downloads")
   public ResponseEntity<EstatisticasDownloadsDTO> getEstatisticasDownloads(@PathVariable String titulo) {
     var estatisticasDownloadsDTO = livroService.obterEstatisticasDownloadsDTO(titulo);
-
     return ResponseEntity.ok(estatisticasDownloadsDTO);
   }
 
   @GetMapping("/curiosidades")
-  public ResponseEntity<CuriosidadeDTO> buscarCuriosidade(@RequestParam String titulo) {
-    // LOG: Entrada no controller - rastreia qual request chegou
-    log.info("CURIOSIDADE_REQ titulo='{}'", titulo);
+  public ResponseEntity<CuriosidadeDTO> buscarCuriosidade(
+      @RequestParam String titulo,
+      HttpServletRequest request) {
+    
+    String clientIp = getClientIp(request);
+    if (!rateLimiter.allowRequest(clientIp)) {
+      log.warn("🚫 RATE_LIMIT_EXCEEDED para IP: {} no endpoint /curiosidades", clientIp);
+      return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+    }
 
-    // Chamada ao service que coordena cache + Gemini
-    String resultado = consultaGemini.obterInformacao(titulo);
+    if (titulo == null || titulo.isBlank() || !inputValidator.isValidTitle(titulo)) {
+      log.warn("⚠️ INVALID_INPUT no /curiosidades: titulo='{}' (pode conter injeção)", titulo);
+      return ResponseEntity.badRequest().build();
+    }
 
-    // LOG: Saída do service - verifica se resultado é null e tamanho da resposta
-    // Se este log mostrar curiosidadeNull=true, confirma que a perda ocorreu no
-    // service
-    // tamanho > 0 indica que pelo menos texto foi recebido
-    log.info("CURIOSIDADE_RES titulo='{}' curiosidadeNull={} tamanho={}",
-        titulo, resultado == null, resultado == null ? 0 : resultado.length());
+    log.info("CURIOSIDADE_REQ titulo='{}' from IP={}", titulo, clientIp);
 
-    return ResponseEntity.ok(new CuriosidadeDTO(titulo, resultado));
+    try {
+      String resultado = consultaGemini.obterInformacao(titulo);
+      log.info("CURIOSIDADE_RES titulo='{}' curiosidadeNull={} tamanho={}",
+          titulo, resultado == null, resultado == null ? 0 : resultado.length());
+      return ResponseEntity.ok(new CuriosidadeDTO(titulo, resultado));
+    } catch (Exception e) {
+      log.error("❌ Erro ao buscar curiosidade para: {} | Erro: {}", titulo, e.getMessage());
+      return ResponseEntity.internalServerError().build();
+    }
   }
 
   @GetMapping("/idioma/{idioma}")
   public ResponseEntity<List<LivroDTO>> listarPorIdioma(@PathVariable String idioma) {
-
     List<Livro> livros = livroService.listarPorIdioma(idioma);
-
     List<LivroDTO> dto = livros.stream()
         .map(mapper::converteLivroParaDTO)
         .toList();
-
     return ResponseEntity.ok(dto);
   }
 
   @GetMapping("/top10")
   public ResponseEntity<List<LivroDTO>> obterTop10() {
-
     List<Livro> livros = livroService.obterTop10();
-
     List<LivroDTO> dto = livros.stream()
         .map(mapper::converteLivroParaDTO)
         .toList();
-
     return ResponseEntity.ok(dto);
   }
 
+  private String getClientIp(HttpServletRequest request) {
+    String xForwardedFor = request.getHeader("X-Forwarded-For");
+    if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+      return xForwardedFor.split(",")[0].trim();
+    }
+    String xRealIp = request.getHeader("X-Real-IP");
+    if (xRealIp != null && !xRealIp.isEmpty()) {
+      return xRealIp;
+    }
+    return request.getRemoteAddr();
+  }
 }
