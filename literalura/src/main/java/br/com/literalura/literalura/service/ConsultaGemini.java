@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import com.google.genai.types.GenerateContentResponse;
 
 import br.com.literalura.literalura.model.Livro;
 import br.com.literalura.literalura.repository.LivroRepository;
+import br.com.literalura.literalura.security.HtmlSanitizer;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -19,9 +21,11 @@ public class ConsultaGemini {
   private static final Logger log = LoggerFactory.getLogger(ConsultaGemini.class);
 
   private final String apiKey;
-
   private final String model;
   private final LivroRepository livroRepository;
+  
+  @Autowired
+  private HtmlSanitizer htmlSanitizer;
 
   public ConsultaGemini(@Value("${gemini.api-key}") String apiKey,
       @Value("${gemini.model}") String model,
@@ -89,6 +93,18 @@ public class ConsultaGemini {
     // partsCount: número de partes na resposta estruturada
     // candidatesCount: número de candidatos de resposta fornecidos
     String curiosidade = response.text();
+    
+    // SEGURANÇA: Sanitiza a resposta da Gemini contra XSS
+    // A API é de confiança, mas é boa prática sanitizar dados externos
+    if (curiosidade != null && !curiosidade.isBlank()) {
+      // Verifica se há padrões suspeitos
+      if (htmlSanitizer.isSuspicious(curiosidade)) {
+        log.warn("⚠️ SUSPICIOUS_CONTENT detectado na resposta Gemini: titulo='{}' | Sanitizando...", nomeNormalizado);
+      }
+      // Sanitiza mesmo que não seja suspeito (defense in depth)
+      curiosidade = htmlSanitizer.sanitize(curiosidade);
+    }
+    
     log.info("GEMINI_OUT textNull={} textBlank={} finishReason={} partsCount={} candidatesCount={}",
         curiosidade == null,
         curiosidade != null && curiosidade.isBlank(),
