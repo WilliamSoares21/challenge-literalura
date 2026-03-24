@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +30,7 @@ import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping("/livros")
+@CrossOrigin(origins = "http://localhost:3000")
 public class LivroController {
 
   private static final Logger log = LoggerFactory.getLogger(LivroController.class);
@@ -61,7 +63,7 @@ public class LivroController {
   public ResponseEntity<LivroDTO> buscarPorTitulo(
       @RequestParam @NotBlank(message = "Título não pode ser vazio") String titulo,
       HttpServletRequest request) {
-    
+
     String clientIp = getClientIp(request);
     if (!rateLimiter.allowRequest(clientIp)) {
       log.warn("🚫 RATE_LIMIT_EXCEEDED para IP: {}", clientIp);
@@ -95,7 +97,7 @@ public class LivroController {
   public ResponseEntity<CuriosidadeDTO> buscarCuriosidade(
       @RequestParam String titulo,
       HttpServletRequest request) {
-    
+
     String clientIp = getClientIp(request);
     if (!rateLimiter.allowRequest(clientIp)) {
       log.warn("🚫 RATE_LIMIT_EXCEEDED para IP: {} no endpoint /curiosidades", clientIp);
