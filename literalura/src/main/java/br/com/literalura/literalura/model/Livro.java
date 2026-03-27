@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "livros")
@@ -30,6 +31,18 @@ public class Livro {
 
   @Column(name = "curiosidade", columnDefinition = "TEXT")
   private String curiosidade;
+
+  @Column(name = "imagem")
+  private String imagem;
+
+  @Column(name = "resumo", columnDefinition = "TEXT")
+  private String resumo;
+
+  @Column(name = "genero")
+  private String genero;
+
+  @Column(name = "data_ultima_atualizacao")
+  private LocalDateTime dataUltimaAtualizacao;
 
   public Livro() {
   }
@@ -87,4 +100,35 @@ public class Livro {
     this.autor = autor;
   }
 
+  public String getImagem() {
+    return imagem;
+  }
+
+  public void setImagem(String imagem) {
+    this.imagem = imagem;
+  }
+
+  public String getResumo() {
+    return resumo;
+  }
+
+  public void setResumo(String resumo) {
+    this.resumo = resumo;
+  }
+
+  public String getGenero() {
+    return genero;
+  }
+
+  public void setGenero(String genero) {
+    this.genero = genero;
+  }
+
+  public LocalDateTime getDataUltimaAtualizacao() {
+    return dataUltimaAtualizacao;
+  }
+
+  public void setDataUltimaAtualizacao(LocalDateTime dataUltimaAtualizacao) {
+    this.dataUltimaAtualizacao = dataUltimaAtualizacao;
+  }
 }
