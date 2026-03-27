@@ -1,7 +1,9 @@
 package br.com.literalura.literalura.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AutorDTO(
     @JsonProperty("name")
     String nome,
@@ -10,5 +12,6 @@ public record AutorDTO(
     Integer anoNascimento,
     
     @JsonProperty("death_year")
-    Integer anoFalecimento) {
+    Integer anoFalecimento
+) {
 }
