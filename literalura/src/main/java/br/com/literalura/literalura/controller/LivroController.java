@@ -151,4 +151,51 @@ public class LivroController {
     }
     return request.getRemoteAddr();
   }
+  
+  @GetMapping("/completo")
+  public ResponseEntity<LivroDTO> obterLivroCompleto(
+    @RequestParam @NotBlank(message = "Título não pode ser vazio") String titulo,
+    HttpServletRequest request) {
+
+    // Validação de rate limiting
+    String clientIp = getClientIp(request);
+    if (!rateLimiter.allowRequest(clientIp)) {
+      log.warn("🚫 RATE_LIMIT_EXCEEDED para IP: {} no endpoint /completo", clientIp);
+      return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+    }
+
+    // Validação de injeção
+    if (!inputValidator.isValidTitle(titulo)) {
+      log.warn("⚠️ INVALID_INPUT detectado: titulo='{}' (pode conter injeção)", titulo);
+      return ResponseEntity.badRequest().build();
+    }
+
+    try {
+      log.info("LIVRO_COMPLETO_REQ titulo='{}' from IP={}", titulo, clientIp);
+      
+      // Busca ou atualiza o livro
+      LivroDTO livroCompleto = livroService.obterLivroCompleto(titulo);
+      
+      log.info("LIVRO_COMPLETO_RES titulo='{}' imagem={} resumo={} genero={}",
+          titulo, 
+          livroCompleto.formats() != null ? "✅" : "❌",
+          livroCompleto.summaries() != null ? "✅" : "❌",
+          !livroCompleto.subjects().isEmpty() ? "✅" : "❌");
+      
+      return ResponseEntity.ok(livroCompleto);
+      
+    } catch (LivroNaoEncontradoException e) {
+      log.warn("Livro não encontrado: {}", titulo);
+      return ResponseEntity.notFound().build();
+      
+    } catch (IllegalArgumentException e) {
+      log.warn("Argumento inválido: {}", e.getMessage());
+      return ResponseEntity.badRequest().build();
+      
+    } catch (Exception e) {
+      log.error("❌ Erro ao buscar livro completo: {} | Erro: {}", titulo, e.getMessage());
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
 }
